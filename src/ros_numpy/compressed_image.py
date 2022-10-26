@@ -6,6 +6,7 @@ from sensor_msgs.msg import CompressedImage
 import numpy as np
 from numpy.lib.stride_tricks import as_strided
 
+
 name_to_dtypes = {
 	"rgb8":    (np.uint8,  3),
 	"rgba8":   (np.uint8,  4),
