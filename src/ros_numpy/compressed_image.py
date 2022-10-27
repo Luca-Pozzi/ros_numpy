@@ -61,14 +61,56 @@ name_to_dtypes = {
 	"64FC4":   (np.float64, 4)
 }
 
+dtypes_to_unit = {
+    "16UC1":	1e-3,	#[mm]
+    "32FC1":	1.0		#[m]
+  }
+
 @converts_to_numpy(CompressedImage)
-def image_to_numpy(msg):
+def compressedimage_to_numpy(msg, header_size = 12):
+	"""From https://answers.ros.org/question/249775/display-compresseddepth-image-python-cv2/
+
+    Args:
+        msg (sensor_msgs.CompressedImage): The ROS CompressedImage message to be converted.
+        header_size (int, optional): The size of the message header in bytes. Only needed to decode messages with data format `32FC1`. Defaults to 12.
+
+    Returns:
+        np.ndarray: RGB values or depth data expressed in m (depending on msg.format).
+    """
 	format = msg.format.split(';')
-	if len(format) == 1:	# If the split has no effect, then the Image is an RGB image
+	
+	if len(format) == 1:	# if the split has no effect, the CompressedImage is assumed to be RGB
 		byte_array = np.frombuffer(msg.data, np.uint8)
 		return cv2.imdecode(byte_array, cv2.IMREAD_UNCHANGED)
+	
+	elif len(format) == 2:	# if the split returns two arguments, the CompressedImage is assumed to be depth
+		depth_fmt, compr_type = [arg.strip() for arg in format]
+		if compr_type != "compressedDepth":
+			raise TypeError("Compression type is expected to be 'compressedDepth'. Instead it is {}".format(compr_type))
+		# Remove the header from the raw data
+		raw_data = msg.data[header_size:]
+		raw_header = msg.data[:header_size]
+		img_raw = cv2.imdecode(np.fromstring(raw_data, np.uint8), cv2.IMREAD_UNCHANGED)
+		if img_raw is None:   # probably wrong header
+			raise ValueError("Could not decode compressed depth image."
+							"You may need to change 'header_size'.")
+		if depth_fmt == "16UC1":
+			data = img_raw
+		elif depth_fmt == "32FC1":
+			# header: int, float, float
+			[__, depthQuantA, depthQuantB] = struct.unpack('iff', raw_header)
+			data = depthQuantA / (depth_img_raw.astype(np.float32)-depthQuantB)
+			# filter max values
+			#data[depth_img_raw == 0] = 0
+		else:
+			raise TypeError("Deconding of '" + depth_fmt + "' is not implemented.")
+
+		return data * dtypes_to_unit[depth_fmt]	# convert to m
+		
+	else:
+		raise ValueError('msg.format {} cannot be interpreted.'.format(msg.format))
 
 
 @converts_from_numpy(CompressedImage)
-def numpy_to_image(arr, encoding):
+def numpy_to_compressedimage(arr, encoding):
 	pass
