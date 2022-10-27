@@ -27,6 +27,18 @@ Currently supports:
   ```
 
 - `sensor_msgs.msg.Image` &harr; 2/3-D `np.array`, similar to the function of `cv_bridge`, but without the dependency on `cv2`
+
+  > **Note.** If use to get the depth data, use as specified below to get depth values in _m_.
+
+  ```python
+  dtypes_to_unit = {
+    "16UC1":	1e-3,	#[mm]
+    "32FC1":	1.0		#[m]
+  }
+  data = ros_numpy.numpify(msg)         # convert msg to ndarray
+  data *= dtypes_to_unit[msg.encoding]  # convert values to m
+  ```
+
 - `nav_msgs.msg.OccupancyGrid` &harr; `np.ma.array`
 - `geometry.msg.Vector3` &harr; 1-D `np.array`. `hom=True` gives `[x, y, z, 0]`
 - `geometry.msg.Point` &harr; 1-D `np.array`. `hom=True` gives `[x, y, z, 1]`
@@ -53,4 +65,8 @@ Any extra args or kwargs to `numpify` or `msgify` will be forwarded to your conv
 - Add simple conversions for:
 
   - [ ] `geometry_msgs.msg.Inertia`
+  - [ ] `sensor_msgs.msg.CompressedImage`
+
+- Add round trip test for:
+
   - [ ] `sensor_msgs.msg.CompressedImage`

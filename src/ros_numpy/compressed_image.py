@@ -4,6 +4,7 @@ from .registry import converts_from_numpy, converts_to_numpy
 from sensor_msgs.msg import CompressedImage
 
 import numpy as np
+import cv2
 from numpy.lib.stride_tricks import as_strided
 
 
@@ -62,7 +63,10 @@ name_to_dtypes = {
 
 @converts_to_numpy(CompressedImage)
 def image_to_numpy(msg):
-	pass
+	format = msg.format.split(';')
+	if len(format) == 1:	# If the split has no effect, then the Image is an RGB image
+		byte_array = np.frombuffer(msg.data, np.uint8)
+		return cv2.imdecode(byte_array, cv2.IMREAD_UNCHANGED)
 
 
 @converts_from_numpy(CompressedImage)
